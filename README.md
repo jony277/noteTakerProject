@@ -1,5 +1,7 @@
 # noteTakerProject
 
+## Screenshots
+![Screenshot 2023-09-24 032448](https://github.com/jony277/noteTakerProject/assets/128567865/eebc0966-8eac-4dbf-ba89-7df83e90dd58)
 
 
 ## Description
