@@ -1,54 +1,61 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
-const uuid = require('./helpers/uuidHelper');
+const { v4: uuidv4 } = require('uuid');
 const { readFromFile, readAndAppend } = require('./helpers/fsUtils');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware for parsing JSON and urlencoded form data
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static('public'));
 
-// Serve static assets
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Route for the home page
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
-// Route for the notes page
 app.get('/notes', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/notes.html'));
 });
 
-// Route for retrieving all notes
-app.get('/public/notes', (req, res) => {
-  readFromFile('./Develop/db/db.json').then((data) => res.json(JSON.parse(data)));
+app.get('/api/notes', (req, res) => {
+  readFromFile('./db/db.json').then((data) => res.json(JSON.parse(data)));
 });
 
-// Route for creating a new note
-app.post('/public/notes', (req, res) => {
+app.post('/api/notes', (req, res) => {
   const { title, text } = req.body;
 
   if (title && text) {
     const newNote = {
       title,
       text,
-      id: uuid(),
+      id: uuidv4(),
     };
 
-    readAndAppend(newNote, './Develop/db/db.json').then(() => {
-      res.json('Note added successfully 🚀');
-    });
+    readAndAppend(newNote, './db/db.json');
+    res.json('Note added successfully 🚀');
   } else {
     res.status(400).json('Title and text are required.');
   }
 });
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+// Bonus: DELETE function
+app.delete('/api/notes/:id', (req, res) => {
+  const noteId = req.params.id;
+  fs.readFile('./db/db.json', 'utf8', (err, data) => {
+    if (err) {
+      console.error(err);
+    } else {
+      const parsedNotes = JSON.parse(data);
+      const notesToKeep = parsedNotes.filter((note) => note.id !== noteId);
+
+      fs.writeFile('./db/db.json', JSON.stringify(notesToKeep, null, 4), (writeErr) =>
+        writeErr ? console.error(writeErr) : console.info('Note has been deleted!')
+      );
+    }
+  });
+  res.send('Note has been deleted!');
 });
+
+app.listen(PORT, () => console.log(`Server is running on http://localhost:${PORT}`));
